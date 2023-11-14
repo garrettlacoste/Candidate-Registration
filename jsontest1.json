@@ -1,0 +1,26 @@
+[
+  {
+    "first_name": "John",
+    "last_name": "Doe",
+    "DOB": "1990-01-01",
+    "party": "Independent",
+    "SOC": "123-45-6789",
+    "position": "Senator"
+  },
+  {
+    "first_name": "Jane",
+    "last_name": "Smith",
+    "DOB": "1985-05-15",
+    "party": "Democratic",
+    "SOC": "987-65-4321",
+    "position": "Governor"
+  },
+  {
+    "first_name": "Bob",
+    "last_name": "Johnson",
+    "DOB": "1970-08-20",
+    "party": "Republican",
+    "SOC": "555-12-3456",
+    "position": "Mayor"
+  }
+]
