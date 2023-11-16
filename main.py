@@ -189,8 +189,9 @@ def main():
 
         if choiceNum == 1:
             file_name = input("Please input the exact file location for your candidate form: ")
+            file_name = file_name.replace('"', '')
             print(file_name)
-            assert os.path.isfile(file_name)
+            assert os.path.isfile(file_name),f"File not found: {file_name}"
             csv_parser = CSVFileParser()
             json_parser = JSONFileParser()
             mongodb_writer = MongoDBWriter()
