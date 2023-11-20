@@ -3,8 +3,8 @@ from typing import List, Optional
 import json
 import csv
 from pymongo import MongoClient, errors
+from bson import ObjectId
 import os
-
 # FileParsingStrategy interface
 class FileParsingStrategy(ABC):
     @abstractmethod
@@ -111,12 +111,7 @@ class MongoDBWriter(FileParsingStrategy):
     def _write_to_mongodb(self, candidates: List["Candidate"]):
         # Implement MongoDB writing logic here
         print("Sending Data to Database:")
-        uri = "mongodb+srv://ClayBarr:GenericPassword@candidateregistration.yhgqzoi.mongodb.net/?retryWrites=true&w=majority"
-        # Create a new client and connect to the server
-        client = MongoClient(uri)
         try:
-            db = client['candidates_db']
-            collection = db['candidates']
             for candidate in candidates:
                 data = {
                     "first_name": candidate.getFirstName(),
@@ -173,6 +168,73 @@ class Candidate:
             print("Error: No parser set. Please use set_parser to set a parsing strategy.")
             return []
 
+
+def CanidateUpdate():
+    userCandidateID = input("Please enter your candidate ObjectID: ")
+    userUpdateMenu = True
+    try:
+        while (userUpdateMenu):
+            # gets current canididate with user input
+            currentInfo = collection.find({"_id": ObjectId(userCandidateID)})
+
+            # im sure theres probably a better way to get each individual information but
+            # with my current mongoDB knowledge this will be the best i can do
+            currentFName = currentInfo.distinct("first_name")
+            currentLName = currentInfo.distinct("last_name")
+            currentDOB = currentInfo.distinct("DOB")
+            currentParty = currentInfo.distinct("party")
+            currentSOC = currentInfo.distinct("SOC")
+            currentPos = currentInfo.distinct("position")
+
+            currentDict = {"First Name: ":currentFName, "Last Name: ":currentLName,
+                           "DOB: ":currentDOB, "Party: ":currentParty, "SOC: ":currentSOC,
+                           "POS: ":currentPos}
+            submenuCounter = 0
+            for x in currentDict.keys():
+                submenuCounter = submenuCounter + 1
+                print(str(submenuCounter) + ": " + x + str(currentDict[x]))
+            print("7: Leave Update Menu \n")
+
+            submenuChoice = input("Please select the number corresponding with the data you wish to update. ")
+            if int(submenuChoice) == 7:
+                userUpdateMenu = False
+            else:
+                updateMenuChoice(int(submenuChoice),userCandidateID)
+
+
+    except:
+        print("ID does not exist")
+    return
+
+def updateMenuChoice(choiceNum, currentID):
+    if choiceNum == 1:
+        changeInput = input("What do you want to change your first name to: ")
+        collection.update_one({"_id":ObjectId(currentID)}, {"$set":{"first_name":changeInput}})
+    elif choiceNum == 2:
+        changeInput = input("What do you want to change your last name to: ")
+        collection.update_one({"_id":ObjectId(currentID)}, {"$set":{"last_name":changeInput}})
+    elif choiceNum == 3:
+        changeInput = input("What do you want to change your date of birth to: ")
+        collection.update_one({"_id":ObjectId(currentID)}, {"$set":{"DOB":changeInput}})
+    elif choiceNum == 4:
+        changeInput = input("What do you want to change your party to: ")
+        collection.update_one({"_id":ObjectId(currentID)}, {"$set":{"party":changeInput}})
+    elif choiceNum == 5:
+        changeInput = input("What do you want to change your social security to: ")
+        collection.update_one({"_id":ObjectId(currentID)}, {"$set":{"SOC":changeInput}})
+    elif choiceNum == 6:
+        changeInput = input("What do you want to change your position to: ")
+        collection.update_one({"_id":ObjectId(currentID)}, {"$set":{"position":changeInput}})
+
+
+#initializes db at start of program
+uri = "mongodb+srv://ClayBarr:GenericPassword@candidateregistration.yhgqzoi.mongodb.net/?retryWrites=true&w=majority"
+# Create a new client and connect to the server
+client = MongoClient(uri)
+db = client['candidates_db']
+collection = db['candidates']
+
+
 def main():
     global inMenu
     inMenu = True
@@ -196,7 +258,7 @@ def main():
             json_parser = JSONFileParser()
             mongodb_writer = MongoDBWriter()
             txt_parser = TextFileParser()
-            candidate = Candidate(first_name="John", last_name="Doe", DOB="1990-01-01", party="Independent",
+            candidate = Candidate(first_name="K", last_name="T", DOB="1990-01-01", party="Independent",
                                   SOC="123-45-6789", position="Senator")
 
             # Create an instance of the policy class
@@ -221,7 +283,7 @@ def main():
 
             pause = input("Candidate registered, press enter to continue:")
         elif choiceNum == 2:
-            # not implemented
+            CanidateUpdate()
             pause = input("Candidate updated, press enter to continue:")
         elif choiceNum == 3:
             # not implemented
