@@ -227,6 +227,32 @@ def updateMenuChoice(choiceNum, currentID):
         collection.update_one({"_id":ObjectId(currentID)}, {"$set":{"position":changeInput}})
 
 
+# ...
+
+def deleteCandidate():
+    userCandidateID = input("Please enter your candidate ObjectID: ")
+    try:
+        currentInfo = collection.find_one({"_id": ObjectId(userCandidateID)})
+        if currentInfo:
+            print("Are you sure you want to delete " + currentInfo.get("first_name", "") + " " + currentInfo.get("last_name", ""))
+            choice = input("Please Put In The Number of Your Option\n"
+                           "1.Yes\n"
+                           "2.No\n")
+            if choice == "1":
+                collection.delete_one({"_id": ObjectId(userCandidateID)})
+                print("Candidate deleted.")
+            elif choice == "2":
+                print("Deletion canceled.")
+        else:
+            print("ID Does Not Exist")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    return
+
+
+
+
 #initializes db at start of program
 uri = "mongodb+srv://ClayBarr:GenericPassword@candidateregistration.yhgqzoi.mongodb.net/?retryWrites=true&w=majority"
 # Create a new client and connect to the server
@@ -243,7 +269,7 @@ def main():
               "Please select one of the following options: \n" +
               "1. Register \n" +
               "2. View/Update information\n" +
-              "3. Print candidate list \n" +
+              "3. Delete A Candidate's Information \n" +
               "4. Exit program")
         print("-----------------------")
         userChoice = input("Menu Decision Num: ")
@@ -286,8 +312,8 @@ def main():
             CanidateUpdate()
             pause = input("Candidate updated, press enter to continue:")
         elif choiceNum == 3:
-            # not implemented
-            pause = input("List printed, press enter to continue:")
+            deleteCandidate()
+            pause = input("Candidate Deleted Press Enter to Continue")
         elif choiceNum == 4:
             inMenu = False
         else:
