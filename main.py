@@ -6,6 +6,7 @@ from pymongo import MongoClient, errors
 from bson import ObjectId
 import os
 import CandidateModule
+import MongoDBWriterModule
 # FileParsingStrategy interface
 
 
@@ -96,42 +97,6 @@ class TextFileParser(CandidateModule.FileParsingStrategy):
         return candidates
 
 # Concrete strategy for MongoDB writing
-class MongoDBWriter(CandidateModule.FileParsingStrategy):
-    def parse_file(self, file_path: str) -> List["Candidate"]:
-        # Not currently implemented or planned to be implemented
-        candidates = []
-        return candidates
-
-    def write_candidates_to_mongodb(self, candidates: List["Candidate"]):
-        # This method is specifically for writing candidates to MongoDB without reading from a file
-        self._write_to_mongodb(candidates)
-
-    def _write_to_mongodb(self, candidates: List["Candidate"]):
-        # Implement MongoDB writing logic here
-        client = MongoClient(uri)
-        db = client['candidates_db']
-        collection = db['candidates']
-        print("Sending Data to Database:")
-        try:
-            for candidate in candidates:
-                data = {
-                    "first_name": candidate.getFirstName(),
-                    "last_name": candidate.getLastName(),
-                    "DOB": candidate.getDOB(),
-                    "party": candidate.getParty(),
-                    "SOC": candidate.getSOC(),
-                    "position": candidate.getPosition()
-                }
-                result = collection.insert_one(data)
-                # Retrieve the generated MongoDB _id and store it in cand_ID
-                print(result.inserted_id, " Remember this as your id")
-        except errors.PyMongoError as e:
-            print(f"Error writing to MongoDB: {e}")
-        finally:
-
-            client.close()
-
-
 
 # Context class (Candidate) using the strategy
 
@@ -147,6 +112,7 @@ def CanidateUpdate():
             # gets current canididate with user input
             currentInfo = collection.find({"_id": ObjectId(userCandidateID)})
 
+
             # im sure theres probably a better way to get each individual information but
             # with my current mongoDB knowledge this will be the best i can do
             currentFName = currentInfo.distinct("first_name")
@@ -159,6 +125,9 @@ def CanidateUpdate():
             currentDict = {"First Name: ":currentFName, "Last Name: ":currentLName,
                            "DOB: ":currentDOB, "Party: ":currentParty, "SOC: ":currentSOC,
                            "POS: ":currentPos}
+            if currentFName == []:
+                print("ID does not exist")
+                break
             submenuCounter = 0
             for x in currentDict.keys():
                 submenuCounter = submenuCounter + 1
@@ -175,7 +144,7 @@ def CanidateUpdate():
 
 
     except:
-        print("ID does not exist")
+        print("There was an error")
     return
 
 def updateMenuChoice(choiceNum, currentID):
@@ -262,7 +231,7 @@ def main():
             assert os.path.isfile(file_name),f"File not found: {file_name}"
             csv_parser = CSVFileParser()
             json_parser = JSONFileParser()
-            mongodb_writer = MongoDBWriter()
+            mongodb_writer = MongoDBWriterModule.MongoDBWriter()
             txt_parser = TextFileParser()
             candidate = CandidateModule.Candidate(first_name="K", last_name="T", DOB="1990-01-01", party="Independent",
                                   SOC="123-45-6789", position="Senator")
