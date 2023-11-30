@@ -5,14 +5,12 @@ import csv
 from pymongo import MongoClient, errors
 from bson import ObjectId
 import os
+import CandidateModule
 # FileParsingStrategy interface
-class FileParsingStrategy(ABC):
-    @abstractmethod
-    def parse_file(self, file_path: str) -> List["Candidate"]:
-        pass
+
 
 class FileParsingPolicy:
-    def determine_strategy(self, file_path: str) -> Optional[FileParsingStrategy]:
+    def determine_strategy(self, file_path: str) -> Optional[CandidateModule.FileParsingStrategy]:
         file_extension = file_path.split('.')[-1].lower()
 
         if file_extension == 'csv':
@@ -26,7 +24,7 @@ class FileParsingPolicy:
             return None
 
 # Concrete strategy for CSV files
-class CSVFileParser(FileParsingStrategy):
+class CSVFileParser(CandidateModule.FileParsingStrategy):
     def parse_file(self, file_path: str) -> List["Candidate"]:
         candidates = []
         try:
@@ -35,7 +33,7 @@ class CSVFileParser(FileParsingStrategy):
                 # Assuming the CSV file has a header row
                 header = next(csv_reader)
                 for row in csv_reader:
-                    candidate = Candidate(
+                    candidate = CandidateModule.Candidate(
                         first_name=row[0],
                         last_name=row[1],
                         DOB=row[2],
@@ -49,7 +47,7 @@ class CSVFileParser(FileParsingStrategy):
         return candidates
 
 # Concrete strategy for JSON files
-class JSONFileParser(FileParsingStrategy):
+class JSONFileParser(CandidateModule.FileParsingStrategy):
     def parse_file(self, file_path: str) -> List["Candidate"]:
         candidates = []
         try:
@@ -58,7 +56,7 @@ class JSONFileParser(FileParsingStrategy):
                 # Assuming the JSON file contains an array of candidates
                 candidates_data = json.loads(json_data)
                 for candidate_data in candidates_data:
-                    candidate = Candidate(
+                    candidate = CandidateModule.Candidate(
                         first_name=candidate_data.get('first_name', ''),
                         last_name=candidate_data.get('last_name', ''),
                         DOB=candidate_data.get('DOB', ''),
@@ -74,7 +72,7 @@ class JSONFileParser(FileParsingStrategy):
         return candidates
 
 # Concrete strategy for text files
-class TextFileParser(FileParsingStrategy):
+class TextFileParser(CandidateModule.FileParsingStrategy):
     def parse_file(self, file_path: str) -> List["Candidate"]:
         candidates = []
         try:
@@ -82,7 +80,7 @@ class TextFileParser(FileParsingStrategy):
                 for line in file:
                     data = line.strip().split(',')
                     if len(data) == 6:
-                        candidate = Candidate(
+                        candidate = CandidateModule.Candidate(
                             first_name=data[0],
                             last_name=data[1],
                             DOB=data[2],
@@ -98,7 +96,7 @@ class TextFileParser(FileParsingStrategy):
         return candidates
 
 # Concrete strategy for MongoDB writing
-class MongoDBWriter(FileParsingStrategy):
+class MongoDBWriter(CandidateModule.FileParsingStrategy):
     def parse_file(self, file_path: str) -> List["Candidate"]:
         # Not currently implemented or planned to be implemented
         candidates = []
@@ -110,6 +108,9 @@ class MongoDBWriter(FileParsingStrategy):
 
     def _write_to_mongodb(self, candidates: List["Candidate"]):
         # Implement MongoDB writing logic here
+        client = MongoClient(uri)
+        db = client['candidates_db']
+        collection = db['candidates']
         print("Sending Data to Database:")
         try:
             for candidate in candidates:
@@ -127,49 +128,18 @@ class MongoDBWriter(FileParsingStrategy):
         except errors.PyMongoError as e:
             print(f"Error writing to MongoDB: {e}")
         finally:
+
             client.close()
 
+
+
 # Context class (Candidate) using the strategy
-class Candidate:
-    def __init__(self, first_name, last_name, DOB, party, SOC, position):
-        self.first_name = first_name
-        self.last_name = last_name
-        self.DOB = DOB
-        self.party = party
-        self.SOC = SOC
-        self.position = position
-        self.parser = None  # Added attribute to store the current strategy
-
-    def getFirstName(self):
-        return self.first_name
-
-    def getLastName(self):
-        return self.last_name
-
-    def getDOB(self):
-        return self.DOB
-
-    def getParty(self):
-        return self.party
-
-    def getSOC(self):
-        return self.SOC
-
-    def getPosition(self):
-        return self.position
-
-    def set_parser(self, parser: FileParsingStrategy):
-        self.parser = parser  # Set the current strategy
-
-    def parse_file(self, file_path: str) -> List["Candidate"]:
-        if self.parser is not None:
-            return self.parser.parse_file(file_path)
-        else:
-            print("Error: No parser set. Please use set_parser to set a parsing strategy.")
-            return []
 
 
 def CanidateUpdate():
+    client = MongoClient(uri)
+    db = client['candidates_db']
+    collection = db['candidates']
     userCandidateID = input("Please enter your candidate ObjectID: ")
     userUpdateMenu = True
     try:
@@ -201,12 +171,17 @@ def CanidateUpdate():
             else:
                 updateMenuChoice(int(submenuChoice),userCandidateID)
 
+        client.close()
+
 
     except:
         print("ID does not exist")
     return
 
 def updateMenuChoice(choiceNum, currentID):
+    client = MongoClient(uri)
+    db = client['candidates_db']
+    collection = db['candidates']
     if choiceNum == 1:
         changeInput = input("What do you want to change your first name to: ")
         collection.update_one({"_id":ObjectId(currentID)}, {"$set":{"first_name":changeInput}})
@@ -225,11 +200,15 @@ def updateMenuChoice(choiceNum, currentID):
     elif choiceNum == 6:
         changeInput = input("What do you want to change your position to: ")
         collection.update_one({"_id":ObjectId(currentID)}, {"$set":{"position":changeInput}})
+    client.close()
 
 
 # ...
 
 def deleteCandidate():
+    client = MongoClient(uri)
+    db = client['candidates_db']
+    collection = db['candidates']
     userCandidateID = input("Please enter your candidate ObjectID: ")
     try:
         currentInfo = collection.find_one({"_id": ObjectId(userCandidateID)})
@@ -247,6 +226,7 @@ def deleteCandidate():
             print("ID Does Not Exist")
     except Exception as e:
         print(f"An error occurred: {e}")
+    client.close()
 
     return
 
@@ -284,7 +264,7 @@ def main():
             json_parser = JSONFileParser()
             mongodb_writer = MongoDBWriter()
             txt_parser = TextFileParser()
-            candidate = Candidate(first_name="K", last_name="T", DOB="1990-01-01", party="Independent",
+            candidate = CandidateModule.Candidate(first_name="K", last_name="T", DOB="1990-01-01", party="Independent",
                                   SOC="123-45-6789", position="Senator")
 
             # Create an instance of the policy class
@@ -318,6 +298,8 @@ def main():
             inMenu = False
         else:
             pause = input("Invalid input, press enter to continue:")
+        client.close()
+
 
 if __name__ == "__main__":
     main()
